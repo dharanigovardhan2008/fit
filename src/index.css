@@ -145,3 +145,16 @@ body {
 .animate-pulse-soft {
   animation: gym-pulse 1.6s ease-in-out infinite;
 }
+
+@keyframes gym-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-in {
+  animation: gym-drawer-in 220ms ease-out both;
+}

@@ -311,13 +311,17 @@ export default function MemberCheckIn() {
               <VideoOff size={16} /> Stop camera
             </Button>
           ) : (
-            !isPending && !isPresent && (
+            !isPending && (
               <Button fullWidth onClick={startCamera} loading={state === "processing"}>
-                <Video size={16} /> Start camera
+                <Video size={16} /> {isPresent ? "Scan to check out" : "Start camera"}
               </Button>
             )
           )}
         </div>
+
+        {isPresent && !result && (
+          <p className="w-full rounded-2xl bg-success/10 px-4 py-3 text-center text-[13px] text-success">You are marked present today.</p>
+        )}
 
         {/* GPS-only request — for members who cannot scan */}
         {!isPending && !isPresent && (
@@ -326,7 +330,7 @@ export default function MemberCheckIn() {
           </Button>
         )}
 
-        {!isPending && !isPresent && state !== "camera-on" && (
+        {!isPending && state !== "camera-on" && (
           <label className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-track bg-white text-[13px] font-medium text-text-primary hover:border-ink/20">
             <ScanLine size={16} /> Scan from a photo
             <input
