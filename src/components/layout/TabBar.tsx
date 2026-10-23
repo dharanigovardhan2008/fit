@@ -38,12 +38,10 @@ export function TabBar({ items }: { items: NavItem[]; raisedTo?: string }) {
               <span
                 className={cn(
                   "relative flex items-center justify-center transition-all duration-200",
-                  isActive
-                    ? "-mt-9 h-14 w-14 rounded-full bg-ink text-on-ink shadow-dark-button ring-4 ring-bg"
-                    : "h-11 w-11",
+                  isActive ? "h-11 w-11 rounded-full bg-white" : "h-11 w-11",
                 )}
               >
-                <item.icon size={isActive ? 24 : 22} className={cn("stroke-[1.5]", isActive ? "text-on-ink" : "text-on-ink/55")} />
+                <item.icon size={22} className={cn("stroke-[1.5]", isActive ? "text-ink" : "text-on-ink/55")} />
                 {count > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
                     {count > 9 ? "9+" : count}

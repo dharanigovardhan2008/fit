@@ -180,28 +180,11 @@ export default function MemberCheckIn() {
     rafRef.current = requestAnimationFrame(tick);
   }
 
+  // A QR scan is enough. No location is needed.
   async function processToken(token: string) {
     if (!session) return;
-    setLocationNote("Getting your location...");
-    if (!navigator.geolocation) {
-      setLocationNote(null);
-      const outcome = await attendanceScan(session, token, null, null, null);
-      finish(outcome);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        setLocationNote(null);
-        const outcome = await attendanceScan(session, token, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-        finish(outcome);
-      },
-      async () => {
-        setLocationNote(null);
-        const outcome = await attendanceScan(session, token, null, null, null);
-        finish(outcome);
-      },
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
+    const outcome = await attendanceScan(session, token, null, null, null);
+    finish(outcome);
   }
 
   function finish(outcome: ScanResult) {

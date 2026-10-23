@@ -4,7 +4,6 @@
 import { getCaller, hmacSign } from "../_shared/client.ts";
 import { corsHeaders, handleOptions, jsonResponse } from "../_shared/cors.ts";
 
-const MAX_ACCURACY_M = 80;
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -23,13 +22,15 @@ Deno.serve(async (req) => {
     const member = { user_id: caller.user_id };
 
     // Check-in always goes through approval: the member's request waits for the trainer or owner.
+    // A QR scan does not need GPS. Only a GPS-only request uses the location.
     const requestApproval = async (method: "qr_gps" | "gps_only") => {
+      const useGps = method === "gps_only";
       const { data: result, error } = await admin.rpc("create_attendance_request", {
         p_member: member.user_id,
         p_method: method,
-        p_lat: latitude ?? null,
-        p_lng: longitude ?? null,
-        p_accuracy: accuracy ?? null,
+        p_lat: useGps ? latitude ?? null : null,
+        p_lng: useGps ? longitude ?? null : null,
+        p_accuracy: useGps ? accuracy ?? null : null,
       });
       if (error) throw error;
       if (!result?.ok) return jsonResponse({ ok: false, message: result?.error ?? "Request failed" }, 400);
@@ -65,17 +66,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "This QR code is from another day" }, 400);
     }
 
-    if (typeof accuracy === "number" && accuracy > MAX_ACCURACY_M) {
-      return jsonResponse({ error: "Your location signal is too weak. Move outdoors and try again." }, 400);
-    }
-
     if (direction === "in") return await requestApproval("qr_gps");
 
     const { data: result, error } = await admin.rpc("record_attendance", {
       p_member: member.user_id,
       p_type: direction,
-      p_lat: latitude ?? null,
-      p_lng: longitude ?? null,
+      p_lat: null,
+      p_lng: null,
       p_method: "qr_gps",
     });
     if (error) throw error;
