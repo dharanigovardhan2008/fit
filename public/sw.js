@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/logo-192.png",
-      badge: "/favicon.png",
+      badge: "/badge.png",
       tag: "opsyl-fit",
       renotify: true,
     }),
