@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", "Inter", system-ui, sans-serif;
+
+  --color-bg: #f8f8f8;
+  --color-surface: #ffffff;
+  --color-ink: #2b2b2b;
+  --color-ink-deep: #0b0b0b;
+  --color-text-primary: #232323;
+  --color-text-secondary: #9a9a9a;
+  --color-placeholder: #b3b3b3;
+  --color-track: #e9e9e9;
+  --color-on-ink: #ffffff;
+  --color-thumb: #f4f4f4;
+  --color-danger: #c23b3b;
+  --color-success: #2f7d4f;
+  --color-warning: #b07a1e;
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-dock: 0 12px 28px rgba(0, 0, 0, 0.22);
+  --shadow-dark-button: 0 8px 20px rgba(0, 0, 0, 0.18);
+
+  --radius-xs: 10px;
+  --radius-sm: 16px;
+  --radius-md: 22px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
+  --radius-pill: 999px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background: linear-gradient(180deg, #fafafa 0%, #f1f1f1 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d8d8d8 transparent;
+}
+
+/* Hides a scrollbar but keeps scrolling. Unlayered with !important so it beats the global rule above. */
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d8d8d8;
+  border-radius: 999px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+@keyframes gym-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: gym-fade-in 200ms ease-out both;
+}
+
+@keyframes gym-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-pulse-soft {
+  animation: gym-pulse 1.6s ease-in-out infinite;
+}
