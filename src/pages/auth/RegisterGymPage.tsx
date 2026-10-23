@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, Copy, Dumbbell } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { registerGym } from "../../lib/backend";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -78,10 +78,8 @@ export default function RegisterGymPage() {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-6 pb-12 pt-10">
       <div className="mb-6 flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-on-ink">
-          <Dumbbell size={18} />
-        </span>
-        <span className="text-[16px] font-semibold">GymSphere</span>
+        <img src="/logo-192.png" alt="Opsyl Fit" className="h-9 w-9 rounded-xl" />
+        <span className="text-[16px] font-semibold">Opsyl Fit</span>
       </div>
       <h1 className="mb-1 text-[28px] font-semibold leading-[40px] text-text-primary">Register your gym</h1>
       <p className="mb-6 text-[13px] leading-5 text-text-secondary">

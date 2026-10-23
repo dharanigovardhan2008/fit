@@ -21,7 +21,7 @@ function QrPrintSheet({ gymName, label, date, value }: { gymName: string; label:
       <p className="text-[22px] font-semibold">{gymName}</p>
       <p className="text-[14px] text-text-secondary">{label} QR code - {date}</p>
       <QRCodeCanvas value={value} size={320} level="M" />
-      <p className="text-[12px] text-text-secondary">Scan with the GymSphere app to {label.toLowerCase()}.</p>
+      <p className="text-[12px] text-text-secondary">Scan with the Opsyl Fit app to {label.toLowerCase()}.</p>
     </div>
   );
 }

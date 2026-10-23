@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LogOut, Dumbbell } from "lucide-react";
+import { LogOut } from "lucide-react";
 import type { NavItem } from "../../lib/navigation";
 import { useAuth } from "../../auth/AuthContext";
 import { initials } from "../../lib/format";
@@ -24,11 +24,9 @@ export function Sidebar({ items, gymName }: { items: NavItem[]; gymName: string 
   return (
     <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r border-black/5 bg-white/70 px-5 py-6 backdrop-blur lg:flex">
       <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-on-ink">
-          <Dumbbell size={18} aria-hidden="true" />
-        </div>
+        <img src="/logo-192.png" alt="Opsyl Fit" className="h-9 w-9 rounded-xl" />
         <div>
-          <p className="text-[14px] font-semibold leading-5">GymSphere</p>
+          <p className="text-[14px] font-semibold leading-5">Opsyl Fit</p>
           <p className="truncate text-[11px] text-text-secondary">{gymName}</p>
         </div>
       </div>

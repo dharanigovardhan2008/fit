@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Dumbbell } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { listPublicGyms } from "../../lib/backend";
 import type { GymOption } from "../../types";
@@ -103,10 +102,8 @@ export default function LoginPage() {
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-[40px] border border-white/10" aria-hidden="true" />
         <div className="absolute left-10 top-8 h-20 w-20 rotate-12 rounded-[24px] bg-white/5" aria-hidden="true" />
         <div className="relative flex items-center gap-2 text-white">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
-            <Dumbbell size={18} />
-          </span>
-          <span className="text-[16px] font-semibold">GymSphere</span>
+          <img src="/logo-192.png" alt="Opsyl Fit" className="h-9 w-9 rounded-xl" />
+          <span className="text-[16px] font-semibold">Opsyl Fit</span>
         </div>
       </div>
 

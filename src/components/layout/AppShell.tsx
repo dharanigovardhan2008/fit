@@ -15,7 +15,7 @@ export function AppShell({ items, raisedTo, greeting }: { items: NavItem[]; rais
 
   return (
     <div className="flex min-h-screen bg-bg">
-      <Sidebar items={items} gymName={gym?.name ?? "GymSphere"} />
+      <Sidebar items={items} gymName={gym?.name ?? "Opsyl Fit"} />
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-bg/90 px-6 pb-3 pt-6 backdrop-blur lg:hidden">
           <NavDrawer items={items} />
