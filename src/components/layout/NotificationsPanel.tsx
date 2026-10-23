@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bell } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, BellRing } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { useDb, useInvalidateDb } from "../../api/db";
 import { markAllNotificationsRead, markNotificationRead } from "../../lib/backend";
@@ -7,6 +7,47 @@ import { formatDateTime } from "../../lib/format";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/States";
+import { disablePush, enablePush, getPushState, type PushState } from "../../lib/push";
+import { useToast } from "../ui/Toast";
+
+function DeviceAlerts({ userId }: { userId: string }) {
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { notify } = useToast();
+  useEffect(() => { getPushState().then(setState); }, []);
+  if (!state || state === "unsupported") return null;
+
+  const hint =
+    state === "needs-install" ? "On iPhone, tap Share, then Add to Home Screen, and open the app from there."
+    : state === "blocked" ? "Notifications are blocked. Allow them in your browser settings."
+    : state === "on" ? "Alerts will pop up on this device."
+    : "Get alerts on this device even when the app is closed.";
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      if (state === "on") await disablePush();
+      else await enablePush(userId);
+      setState(await getPushState());
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "Could not change notifications.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-3 flex items-center gap-3 rounded-2xl bg-thumb px-4 py-3">
+      <BellRing size={18} className="shrink-0 text-text-primary" aria-hidden="true" />
+      <p className="flex-1 text-[12px] leading-4 text-text-secondary">{hint}</p>
+      {(state === "on" || state === "off") && (
+        <Button size="sm" variant={state === "on" ? "secondary" : "primary"} onClick={toggle} loading={busy}>
+          {state === "on" ? "Turn off" : "Turn on"}
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export function NotificationsPanel() {
   const { session } = useAuth();
@@ -34,6 +75,7 @@ export function NotificationsPanel() {
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Notifications">
+        {session && <DeviceAlerts userId={session.userId} />}
         {notifications.length === 0 ? (
           <EmptyState title="You are all caught up" description="New updates about members, trainers and your gym will appear here." />
         ) : (
