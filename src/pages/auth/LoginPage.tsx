@@ -94,92 +94,117 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[460px] flex-col px-6 pb-10 pt-6 sm:pt-10">
-      <div
-        className="relative mb-8 flex h-[220px] w-full flex-col justify-end overflow-hidden rounded-[24px] bg-ink-deep p-6 sm:h-[260px]"
-        style={{ backgroundImage: "linear-gradient(180deg, rgba(11,11,11,1) 55%, rgba(248,248,248,1) 100%)" }}
+    <div className="min-h-screen bg-bg lg:grid lg:grid-cols-[1.05fr_1fr]">
+      {/* Brand panel */}
+      <aside
+        className="relative flex flex-col justify-between overflow-hidden px-6 pb-10 pt-8 text-white lg:min-h-screen lg:px-14 lg:py-14"
+        style={{ backgroundImage: "linear-gradient(145deg, #0a3cff 0%, #0057ff 45%, #2ec5ff 100%)" }}
       >
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-[40px] border border-white/10" aria-hidden="true" />
-        <div className="absolute left-10 top-8 h-20 w-20 rotate-12 rounded-[24px] bg-white/5" aria-hidden="true" />
-        <div className="relative flex items-center gap-2 text-white">
-          <img src="/logo-192.png" alt="Opsyl Fit" className="h-9 w-9 rounded-xl" />
-          <span className="text-[16px] font-semibold">Opsyl Fit</span>
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-black/20 blur-3xl" aria-hidden="true" />
+
+        <div className="relative flex items-center gap-3">
+          <img src="/logo-192.png" alt="" className="h-11 w-11 rounded-[14px] shadow-lg" />
+          <span className="text-[20px] font-semibold tracking-tight">Opsyl Fit</span>
         </div>
-      </div>
 
-      <h1 className="mb-1 text-[28px] font-semibold leading-[40px] text-text-primary">Welcome back</h1>
-      <p className="mb-8 text-[13px] leading-5 text-text-secondary">
-        Pick your gym, then sign in with your ID, email or mobile number.
-      </p>
-
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        <Dropdown
-          id="gym"
-          label="Gym"
-          required
-          value={gymId}
-          onChange={setGymId}
-          placeholder={gymsLoaded && gyms.length === 0 ? "No gyms yet. Register your gym below" : "Select your gym"}
-          options={gyms.map((g) => ({ value: g.gymId, label: g.name }))}
-        />
-        <Input
-          id="identifier"
-          label="ID, email or mobile number"
-          required
-          autoComplete="username"
-          placeholder="e.g. M2601, you@example.com or 9876543210"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-        />
-        <Input
-          id="password"
-          label="Password"
-          type="password"
-          required
-          autoComplete="current-password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && (
-          <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-[13px] text-danger">
-            {error}
+        <div className="relative mt-8 lg:mt-0">
+          <h2 className="max-w-md text-[26px] font-semibold leading-[1.2] tracking-tight sm:text-[32px] lg:text-[44px]">
+            Run your gym from one place.
+          </h2>
+          <p className="mt-3 max-w-md text-[14px] leading-6 text-white/80">
+            Members, trainers, attendance, payments and analytics for every branch you own.
           </p>
-        )}
-        <Button type="submit" size="lg" fullWidth loading={loading} disabled={!gymId || !identifier.trim() || !password}>
-          Login
-        </Button>
-      </form>
+          <ul className="mt-6 hidden gap-3 text-[14px] text-white/90 lg:grid">
+            {["QR check-in with trainer approval", "Payments, plans and renewals", "Live analytics for every gym"].map((t) => (
+              <li key={t} className="flex items-center gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[12px]">✓</span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* "or" divider */}
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-track" />
-        <span className="text-[12px] text-text-secondary">or</span>
-        <span className="h-px flex-1 bg-track" />
-      </div>
+        <p className="relative mt-8 hidden text-[12px] text-white/60 lg:block">© Opsyl. All rights reserved.</p>
+      </aside>
 
-      {/* Google sign-in button — 327×60, radius 18, card shadow, white */}
-      <button
-        type="button"
-        onClick={onGoogleSignIn}
-        disabled={googleLoading || loading}
-        className="flex h-[60px] w-full max-w-[327px] self-center items-center justify-center gap-3 rounded-[18px] border border-track bg-white text-[14px] font-medium text-text-primary shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-all hover:border-ink/20 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <GoogleLogo />
-        {googleLoading ? "Signing in..." : "Continue with Google"}
-      </button>
+      {/* Form */}
+      <main className="flex items-start justify-center px-5 py-8 sm:px-8 lg:items-center lg:py-12">
+        <div className="w-full max-w-[420px] rounded-[28px] bg-white p-6 shadow-card sm:p-8 lg:bg-transparent lg:p-0 lg:shadow-none">
+          <h1 className="text-[26px] font-semibold leading-8 text-text-primary">Welcome back</h1>
+          <p className="mb-6 mt-1.5 text-[13px] leading-5 text-text-secondary">
+            Pick your gym, then sign in with your ID, email or mobile number.
+          </p>
 
-      <div className="mt-6 flex flex-col items-center gap-2 text-[13px]">
-        <Link to="/forgot-password" className="text-text-secondary underline-offset-2 hover:underline">
-          Forgot password
-        </Link>
-        <p className="text-text-secondary">
-          New gym?{" "}
-          <Link to="/register" className="font-medium text-text-primary underline-offset-2 hover:underline">
-            Register your gym
-          </Link>
-        </p>
-      </div>
+          <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+            <Dropdown
+              id="gym"
+              label="Gym"
+              required
+              value={gymId}
+              onChange={setGymId}
+              placeholder={gymsLoaded && gyms.length === 0 ? "No gyms yet. Register your gym below" : "Select your gym"}
+              options={gyms.map((g) => ({ value: g.gymId, label: g.name }))}
+            />
+            <Input
+              id="identifier"
+              label="ID, email or mobile number"
+              required
+              autoComplete="username"
+              autoCapitalize="none"
+              placeholder="M2601, you@example.com or 9876543210"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+            />
+            <Input
+              id="password"
+              label="Password"
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {error && (
+              <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-[13px] text-danger">
+                {error}
+              </p>
+            )}
+            <Button type="submit" size="lg" fullWidth loading={loading} disabled={!gymId || !identifier.trim() || !password}>
+              Login
+            </Button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-track" />
+            <span className="text-[12px] text-text-secondary">or</span>
+            <span className="h-px flex-1 bg-track" />
+          </div>
+
+          <button
+            type="button"
+            onClick={onGoogleSignIn}
+            disabled={googleLoading || loading}
+            className="flex h-[54px] w-full items-center justify-center gap-3 rounded-[18px] border border-track bg-white text-[14px] font-medium text-text-primary shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all hover:border-ink/20 hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <GoogleLogo />
+            {googleLoading ? "Signing in..." : "Continue with Google"}
+          </button>
+
+          <div className="mt-6 flex flex-col items-center gap-2 text-[13px]">
+            <Link to="/forgot-password" className="text-text-secondary underline-offset-2 hover:underline">
+              Forgot password
+            </Link>
+            <p className="text-text-secondary">
+              New gym?{" "}
+              <Link to="/register" className="font-semibold text-text-primary underline-offset-2 hover:underline">
+                Register your gym
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

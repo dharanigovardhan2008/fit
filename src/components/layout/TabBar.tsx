@@ -23,7 +23,7 @@ export function TabBar({ items, raisedTo }: { items: NavItem[]; raisedTo?: strin
   return (
     <nav
       aria-label="Primary"
-      className="no-print fixed inset-x-0 bottom-5 z-40 mx-auto flex h-[60px] w-[327px] items-center justify-around rounded-[30px] bg-ink px-2 shadow-dock lg:hidden"
+      className="no-print fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-40 mx-auto flex h-[60px] w-[min(327px,calc(100%-32px))] items-center justify-around rounded-[30px] bg-ink px-2 shadow-dock lg:hidden"
     >
       {tabItems.map((item) => {
         const isRaised = item.to === raisedTo;
