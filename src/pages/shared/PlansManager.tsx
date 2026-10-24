@@ -10,6 +10,7 @@ import { Dropdown } from "../../components/ui/Dropdown";
 import { Input, Textarea } from "../../components/ui/Input";
 import { EmptyState } from "../../components/ui/States";
 import { useToast } from "../../components/ui/Toast";
+import { PLAN_TEMPLATES } from "../../lib/planTemplates";
 import { addDaysPublic, addMemberPlan, deleteMemberPlan, todayStr } from "../../lib/backend";
 import { formatDate } from "../../lib/format";
 
@@ -30,9 +31,21 @@ export default function PlansManager() {
 
   const [memberId, setMemberId] = useState("");
   const [kind, setKind] = useState<"diet" | "workout">("workout");
+  const [templateId, setTemplateId] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const templates = PLAN_TEMPLATES.filter((t) => t.kind === kind);
+
+  function chooseTemplate(id: string) {
+    setTemplateId(id);
+    const t = PLAN_TEMPLATES.find((x) => x.id === id);
+    if (t) {
+      setTitle(t.title);
+      setContent(t.content);
+    }
+  }
 
   const today = todayStr();
   const from = addDaysPublic(today, -6);
@@ -51,6 +64,7 @@ export default function PlansManager() {
       notify("Plan sent to the member");
       setTitle("");
       setContent("");
+      setTemplateId("");
     } catch (err) {
       notify(err instanceof Error ? err.message : "Could not save the plan.", "error");
     } finally {
@@ -77,15 +91,26 @@ export default function PlansManager() {
             id="plan-kind"
             label="Type"
             value={kind}
-            onChange={(v) => setKind(v as "diet" | "workout")}
+            onChange={(v) => {
+              setKind(v as "diet" | "workout");
+              setTemplateId("");
+            }}
             options={[{ value: "workout", label: "Workout plan" }, { value: "diet", label: "Diet plan" }]}
+          />
+          <Dropdown
+            id="plan-template"
+            label="Ready-made plan (optional)"
+            value={templateId}
+            onChange={chooseTemplate}
+            placeholder="Start from a ready-made plan, or write your own"
+            options={templates.map((t) => ({ value: t.id, label: t.title }))}
           />
           <Input id="plan-title" label="Title" required placeholder="e.g. Fat loss, week 1" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Textarea
             id="plan-content"
             label="Plan"
             required
-            rows={7}
+            rows={12}
             placeholder={"Mon: Chest and triceps\nTue: Back and biceps\n..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}

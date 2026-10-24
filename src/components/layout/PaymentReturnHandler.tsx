@@ -4,6 +4,7 @@ import { useInvalidateDb } from "../../api/db";
 import { useToast } from "../ui/Toast";
 import { verifyOnlinePayment, type CreatedCredentials } from "../../lib/backend";
 import { CredentialsPanel } from "../../pages/owner/OwnerTrainers";
+import { Modal } from "../ui/Modal";
 
 // After paying on Cashfree the person lands back on the app with ?cf_order=<id>.
 // This confirms the payment with the server and finishes the job (create the member or renew the plan).
@@ -50,5 +51,9 @@ export function PaymentReturnHandler() {
     })();
   }, [session, invalidate, notify]);
 
-  return credentials ? <CredentialsPanel credentials={credentials} onClose={() => setCredentials(null)} /> : null;
+  return (
+    <Modal open={!!credentials} onClose={() => setCredentials(null)} title="Member created">
+      {credentials && <CredentialsPanel credentials={credentials} onClose={() => setCredentials(null)} />}
+    </Modal>
+  );
 }
