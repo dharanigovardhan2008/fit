@@ -12,7 +12,8 @@ import { Modal } from "../../components/ui/Modal";
 import { Input, Select } from "../../components/ui/Input";
 import { EmptyState } from "../../components/ui/States";
 import { useToast } from "../../components/ui/Toast";
-import { createMember, deleteUser, type CreatedCredentials } from "../../lib/backend";
+import { createMember, deleteUser, startMemberPayment, type CreatedCredentials } from "../../lib/backend";
+import { formatCurrency } from "../../lib/format";
 import { ConfirmDelete } from "../../components/ui/ConfirmDelete";
 import { formatDate, initials } from "../../lib/format";
 import { CredentialsPanel } from "./OwnerTrainers";
@@ -34,11 +35,15 @@ export default function OwnerMembers() {
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
   const [credentials, setCredentials] = useState<CreatedCredentials | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<MemberFormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<MemberFormValues>({
     defaultValues: { gender: "male", preferredShift: "full", paymentMode: "cash" },
   });
 
   const plans = (db?.plans ?? []).filter((p) => p.gymId === session?.gymId);
+  const watchedPlanId = watch("planId");
+  const watchedMode = watch("paymentMode");
+  const planPrice = plans.find((p) => p.planId === watchedPlanId)?.price ?? 0;
+  const payOnlineMode = watchedMode === "upi";
 
   const rows = useMemo(() => {
     if (!db || !session) return [];
@@ -66,6 +71,20 @@ export default function OwnerMembers() {
   async function onSubmit(values: MemberFormValues) {
     if (!session) return;
     try {
+      if (values.paymentMode === "upi") {
+        // Online: go to Cashfree first. The member is created once the payment is confirmed.
+        const amount = Number(values.amountPaid || planPrice);
+        if (!(amount >= 1)) {
+          notify("Enter an amount of at least 1 rupee to pay online.", "error");
+          return;
+        }
+        await startMemberPayment({
+          name: values.name, age: values.age ? Number(values.age) : undefined, gender: values.gender,
+          phone: values.phone, email: values.email, planId: values.planId, amountPaid: amount,
+          preferredShift: values.preferredShift, goal: values.goal,
+        });
+        return;
+      }
       const result = await createMember(session.gymId, {
         name: values.name, age: values.age ? Number(values.age) : undefined, gender: values.gender,
         phone: values.phone, email: values.email, planId: values.planId, amountPaid: Number(values.amountPaid || 0),
@@ -190,18 +209,32 @@ export default function OwnerMembers() {
           <Input id="m-email" label="Email" type="email" required error={errors.email?.message}
             {...register("email", { required: "Email is required", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email" } })} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select id="m-plan" label="Plan" required error={errors.planId?.message} {...register("planId", { required: "Choose a plan" })}>
+            <Select
+              id="m-plan"
+              label="Plan"
+              required
+              error={errors.planId?.message}
+              {...register("planId", {
+                required: "Choose a plan",
+                onChange: (e) => {
+                  const price = plans.find((p) => p.planId === e.target.value)?.price;
+                  setValue("amountPaid", price != null ? String(price) : "");
+                },
+              })}
+            >
               <option value="">Select a plan</option>
               {plans.map((p) => <option key={p.planId} value={p.planId}>{p.name} - {p.durationDays} days</option>)}
             </Select>
-            <Input id="m-amount" label="Amount paid" type="number" {...register("amountPaid")} />
+            <Input id="m-topay" label="Amount to pay" readOnly value={watchedPlanId ? formatCurrency(planPrice) : ""} placeholder="Choose a plan" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Select id="m-mode" label="Payment mode" {...register("paymentMode")}>
               <option value="cash">Cash</option>
-              <option value="upi">UPI</option>
-              <option value="card">Card</option>
+              <option value="upi">UPI / Card (pay online)</option>
             </Select>
+            <Input id="m-amount" label="Amount paid" type="number" min={0} {...register("amountPaid")} />
+          </div>
+          <div className="grid gap-3">
             <Select id="m-shift" label="Preferred shift" {...register("preferredShift")}>
               <option value="morning">Morning</option>
               <option value="evening">Evening</option>
@@ -209,7 +242,14 @@ export default function OwnerMembers() {
             </Select>
           </div>
           <Input id="m-goal" label="Goal" placeholder="e.g. weight loss and toning" {...register("goal")} />
-          <Button type="submit" fullWidth loading={isSubmitting}>Create member</Button>
+          {payOnlineMode && (
+            <p className="rounded-2xl bg-thumb px-4 py-3 text-[12px] leading-5 text-text-secondary">
+              You will be taken to a secure Cashfree page to pay. The member is created as soon as the payment goes through.
+            </p>
+          )}
+          <Button type="submit" fullWidth loading={isSubmitting}>
+            {payOnlineMode ? "Pay online and create member" : "Create member"}
+          </Button>
         </form>
       </Modal>
 

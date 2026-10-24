@@ -733,43 +733,70 @@ export async function ownerRenewWithPoints(memberId: string, planId: string, use
   check(error);
 }
 
-interface RazorpayOrder { orderId: string; amount: number; currency: string; keyId: string; payable: number }
+interface CashfreeOrder { orderId: string; paymentSessionId: string; mode: "sandbox" | "production" }
 
-function loadRazorpay(): Promise<void> {
-  if ((window as any).Razorpay) return Promise.resolve();
+function loadCashfree(): Promise<void> {
+  if ((window as any).Cashfree) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Could not load the payment window. Check your internet."));
+    s.onerror = () => reject(new Error("Could not load the payment page. Check your internet."));
     document.body.appendChild(s);
   });
 }
 
-// Opens Razorpay, then renews the plan once the payment is confirmed on the server.
-export async function payOnline(
-  session: Session, planId: string, usePoints: boolean,
-): Promise<{ paid: boolean; endDate?: string }> {
-  const { ok, data } = await invokeFn<RazorpayOrder>("razorpay-order", { planId, usePoints });
-  if (!ok || !data.orderId) throw new Error(data.error ?? "The payment could not be started.");
-  await loadRazorpay();
-  return new Promise((resolve, reject) => {
-    const rz = new (window as any).Razorpay({
-      key: data.keyId, amount: data.amount, currency: data.currency, order_id: data.orderId,
-      name: "Opsyl Fit", description: "Membership renewal", prefill: { name: session.name },
-      theme: { color: "#0057ff" },
-      handler: async (resp: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-        const verified = await invokeFn<{ endDate?: string }>("razorpay-verify", {
-          orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, signature: resp.razorpay_signature,
-        });
-        if (!verified.ok) reject(new Error(verified.data.error ?? "We could not confirm the payment."));
-        else resolve({ paid: true, endDate: verified.data.endDate });
-      },
-      modal: { ondismiss: () => resolve({ paid: false }) },
-    });
-    rz.on("payment.failed", () => reject(new Error("The payment failed. Please try again.")));
-    rz.open();
-  });
+// Cashfree sends the person back here with ?cf_order=<id> once they have paid (or cancelled).
+function paymentReturnUrl(): string {
+  return `${window.location.origin}${window.location.pathname}?cf_order={order_id}`;
+}
+
+async function openCashfree(order: CashfreeOrder): Promise<void> {
+  await loadCashfree();
+  const cashfree = (window as any).Cashfree({ mode: order.mode });
+  await cashfree.checkout({ paymentSessionId: order.paymentSessionId, redirectTarget: "_self" });
+}
+
+export interface NewMemberPayment {
+  name: string; age?: number; gender?: string; phone?: string; email: string; planId: string;
+  amountPaid: number; preferredShift?: string; goal?: string;
+}
+
+// Owner: opens Cashfree to take the joining fee. The member is created after the payment is confirmed.
+export async function startMemberPayment(member: NewMemberPayment): Promise<void> {
+  const { ok, data } = await invokeFn<CashfreeOrder>("cashfree-order", { kind: "member", member, returnUrl: paymentReturnUrl() });
+  if (!ok || !data.paymentSessionId) throw new Error(data.error ?? "The payment could not be started.");
+  await openCashfree(data);
+}
+
+// Member: opens Cashfree to pay for their own renewal.
+export async function startRenewalPayment(planId: string, usePoints: boolean): Promise<void> {
+  const { ok, data } = await invokeFn<CashfreeOrder>("cashfree-order", { kind: "renewal", planId, usePoints, returnUrl: paymentReturnUrl() });
+  if (!ok || !data.paymentSessionId) throw new Error(data.error ?? "The payment could not be started.");
+  await openCashfree(data);
+}
+
+export interface PaymentResult {
+  status: "paid" | "done" | "unpaid" | "failed" | "processing";
+  kind: "member" | "renewal";
+  credentials?: { publicId: string; email: string; temporaryPassword: string; expiresInHours: number; waitlisted: boolean };
+  name?: string;
+  phone?: string;
+  endDate?: string;
+  alreadyDone?: boolean;
+}
+
+export async function verifyOnlinePayment(orderId: string): Promise<PaymentResult> {
+  const { ok, data } = await invokeFn<PaymentResult>("cashfree-verify", { orderId });
+  if (!ok) throw new Error(data.error ?? "We could not confirm the payment.");
+  return data;
+}
+
+// Owner sends a test alert. Returns how many devices the person has registered.
+export async function sendTestNotification(userId: string): Promise<number> {
+  const { data, error } = await supabase.rpc("send_test_notification", { p_user: userId });
+  check(error);
+  return Number(data ?? 0);
 }
 
 export async function sendAnnouncement(title: string, message: string, audience: "all" | "members" | "trainers"): Promise<number> {

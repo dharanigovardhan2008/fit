@@ -9,7 +9,7 @@ import { Modal } from "../../components/ui/Modal";
 import { Textarea } from "../../components/ui/Input";
 import { EmptyState } from "../../components/ui/States";
 import { useToast } from "../../components/ui/Toast";
-import { submitChangeRequest, daysBetween, todayStr, payOnline, quoteRenewal } from "../../lib/backend";
+import { submitChangeRequest, daysBetween, todayStr, startRenewalPayment, quoteRenewal } from "../../lib/backend";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { useMyPoints } from "./MemberRewards";
 import type { RenewalQuote } from "../../types";
@@ -56,15 +56,10 @@ export default function MemberSubscription() {
     if (!session) return;
     setPaying(true);
     try {
-      const res = await payOnline(session, payPlanId, usePoints);
-      if (res.paid) {
-        invalidate();
-        notify("Payment done. Your plan is renewed.");
-        setShowPay(false);
-      }
+      // Opens the Cashfree page. The plan is renewed when you come back after paying.
+      await startRenewalPayment(payPlanId, usePoints);
     } catch (err) {
       notify(err instanceof Error ? err.message : "The payment could not be completed.", "error");
-    } finally {
       setPaying(false);
     }
   }
@@ -164,7 +159,7 @@ export default function MemberSubscription() {
           <Button size="lg" fullWidth loading={paying} disabled={!quote || !payPlanId} onClick={pay}>
             Pay {quote ? formatCurrency(quote.payable) : ""}
           </Button>
-          <p className="text-center text-[11px] text-text-secondary">Pay with UPI, card or net banking. Secured by Razorpay.</p>
+          <p className="text-center text-[11px] text-text-secondary">Pay with UPI, card or net banking on the secure Cashfree page.</p>
         </div>
       </Modal>
 

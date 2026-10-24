@@ -9,7 +9,8 @@ import { Dropdown } from "../../components/ui/Dropdown";
 import { Input, Textarea } from "../../components/ui/Input";
 import { EmptyState } from "../../components/ui/States";
 import { useToast } from "../../components/ui/Toast";
-import { sendAnnouncement } from "../../lib/backend";
+import { sendAnnouncement, sendTestNotification } from "../../lib/backend";
+import { BellRing } from "lucide-react";
 import { formatDateTime } from "../../lib/format";
 
 const AUDIENCE = { all: "Everyone", members: "Members only", trainers: "Trainers only" } as const;
@@ -23,6 +24,32 @@ export default function OwnerAnnouncements() {
   const [message, setMessage] = useState("");
   const [audience, setAudience] = useState<keyof typeof AUDIENCE>("members");
   const [sending, setSending] = useState(false);
+
+  const [testUser, setTestUser] = useState("");
+  const [testing, setTesting] = useState(false);
+  const people = (db?.users ?? [])
+    .filter((u) => u.gymId === session?.gymId && u.isActive && (u.role === "member" || u.role === "trainer"))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  async function sendTest() {
+    if (!testUser) return;
+    setTesting(true);
+    try {
+      const devices = await sendTestNotification(testUser);
+      invalidate();
+      const name = people.find((p) => p.userId === testUser)?.name ?? "them";
+      notify(
+        devices > 0
+          ? `Test alert sent to ${name}. It should pop up on their phone in a few seconds.`
+          : `Sent in the app, but ${name} has not turned on phone alerts yet. Ask them to tap the bell and Turn on.`,
+        devices > 0 ? "success" : "error",
+      );
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "Could not send the test.", "error");
+    } finally {
+      setTesting(false);
+    }
+  }
 
   const history = (db?.announcements ?? [])
     .filter((a) => a.gymId === session?.gymId)
@@ -73,6 +100,26 @@ export default function OwnerAnnouncements() {
             <Megaphone size={16} /> Send announcement
           </Button>
         </form>
+      </Card>
+
+      <Card className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-[15px] font-semibold">Test alerts</h2>
+          <p className="mt-1 text-[12px] leading-5 text-text-secondary">
+            Send a test alert to one person to check that their phone gets notifications.
+          </p>
+        </div>
+        <Dropdown
+          id="test-user"
+          label="Send test to"
+          value={testUser}
+          onChange={setTestUser}
+          placeholder={people.length === 0 ? "No members yet" : "Select a member or trainer"}
+          options={people.map((u) => ({ value: u.userId, label: `${u.name} (${u.publicId})` }))}
+        />
+        <Button variant="secondary" fullWidth loading={testing} disabled={!testUser} onClick={sendTest}>
+          <BellRing size={16} /> Send test notification
+        </Button>
       </Card>
 
       <div>
