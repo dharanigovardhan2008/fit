@@ -43,6 +43,10 @@ import MemberRate from "./pages/member/MemberRate";
 import MemberRequests from "./pages/member/MemberRequests";
 import MemberProfile from "./pages/member/MemberProfile";
 
+import OwnerAnnouncements from "./pages/owner/OwnerAnnouncements";
+import PlansManager from "./pages/shared/PlansManager";
+import MemberRewards from "./pages/member/MemberRewards";
+import MemberPlans from "./pages/member/MemberPlans";
 import DevTestPage from "./pages/dev/DevTestPage";
 import ManualAttendance from "./pages/shared/ManualAttendance";
 import TrainerMyAttendance from "./pages/trainer/TrainerMyAttendance";
@@ -71,6 +75,8 @@ export default function App() {
                   <Route path="/owner/members" element={<OwnerMembers />} />
                   <Route path="/owner/attendance" element={<OwnerAttendance />} />
                   <Route path="/owner/subscriptions" element={<OwnerSubscriptions />} />
+                  <Route path="/owner/announcements" element={<OwnerAnnouncements />} />
+                  <Route path="/owner/plans" element={<PlansManager />} />
                   <Route path="/owner/ratings" element={<OwnerRatings />} />
                   <Route path="/owner/requests" element={<OwnerRequests />} />
                   <Route path="/owner/analytics" element={<OwnerAnalytics />} />
@@ -89,6 +95,7 @@ export default function App() {
                   <Route path="/trainer/members" element={<TrainerMembers />} />
                   <Route path="/trainer/attendance" element={<TrainerAttendance />} />
                   <Route path="/trainer/profile" element={<TrainerProfile />} />
+                  <Route path="/trainer/plans" element={<PlansManager />} />
                   <Route path="/trainer/salary" element={<TrainerSalary />} />
                   <Route path="/trainer/rating" element={<TrainerRating />} />
                   <Route path="/trainer/alerts" element={<TrainerAlerts />} />
@@ -103,6 +110,8 @@ export default function App() {
                 <Route element={<AppShell items={memberNav} raisedTo="/member/checkin" greeting="Good to see you" />}>
                   <Route path="/member" element={<MemberHome />} />
                   <Route path="/member/checkin" element={<MemberCheckIn />} />
+                  <Route path="/member/rewards" element={<MemberRewards />} />
+                  <Route path="/member/plans" element={<MemberPlans />} />
                   <Route path="/member/trainer" element={<MemberTrainer />} />
                   <Route path="/member/progress" element={<MemberProgress />} />
                   <Route path="/member/subscription" element={<MemberSubscription />} />

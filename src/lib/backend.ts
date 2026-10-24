@@ -11,7 +11,8 @@ import { supabase } from "./supabase";
 import type {
   AppUser, AttendanceAudit, Attendance, AttendanceRequest, BodyMetric, ChangeRequest, ChurnAlert,
   Equipment, Gym, Member, Notification, Payment, Plan, Rating, SalaryPayment, Session, ShiftType,
-  Subscription, Trainer, TrainerAttendance, UserRole, GymOption,
+  Subscription, Trainer, TrainerAttendance, UserRole, GymOption, Announcement, MemberPlan, MemberPlanLog,
+  PointsInfo, RenewalQuote,
 } from "../types";
 
 const SESSION_KEY = "gymsphere.session.v3";
@@ -35,6 +36,9 @@ export interface Db {
   attendanceAudits: AttendanceAudit[];
   attendanceRequests: AttendanceRequest[];
   trainerAttendance: TrainerAttendance[];
+  announcements: Announcement[];
+  memberPlans: MemberPlan[];
+  memberPlanLogs: MemberPlanLog[];
   idCounters: Record<string, number>;
 }
 
@@ -52,6 +56,10 @@ function nowIso(): string {
 
 function todayStr(d = new Date()): string {
   return d.toISOString().slice(0, 10);
+}
+
+export function addDaysPublic(dateStr: string, days: number): string {
+  return addDays(dateStr, days);
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -142,7 +150,9 @@ const mapGym = (r: any): Gym => ({
   gymId: r.gym_id, code: r.code, name: r.name, address: r.address ?? "",
   latitude: r.latitude, longitude: r.longitude, radiusM: r.radius_m,
   closingTime: String(r.closing_time ?? "22:00").slice(0, 5),
-  requireCheckoutApproval: !!r.require_checkout_approval, createdAt: r.created_at,
+  requireCheckoutApproval: !!r.require_checkout_approval,
+  pointsPerVisit: r.points_per_visit ?? 10, pointValue: Number(r.point_value ?? 0.5),
+  streakBonus: r.streak_bonus ?? 50, maxDiscountPct: r.max_discount_pct ?? 30, createdAt: r.created_at,
 });
 const mapUser = (r: any): AppUser => ({
   userId: r.user_id, gymId: r.gym_id, publicId: r.public_id, role: r.role, name: r.name,
@@ -218,6 +228,17 @@ const mapTrainerAttendance = (r: any): TrainerAttendance => ({
   latitude: r.latitude, longitude: r.longitude, distanceM: r.distance_m, decidedBy: r.decided_by,
   decidedAt: r.decided_at, rejectReason: r.reject_reason,
 });
+const mapAnnouncement = (r: any): Announcement => ({
+  id: r.id, gymId: r.gym_id, title: r.title ?? "", message: r.message, audience: r.audience,
+  sentTo: r.sent_to ?? 0, createdAt: r.created_at,
+});
+const mapMemberPlan = (r: any): MemberPlan => ({
+  id: r.id, gymId: r.gym_id, memberId: r.member_id, createdBy: r.created_by, kind: r.kind,
+  title: r.title, content: r.content, createdAt: r.created_at,
+});
+const mapPlanLog = (r: any): MemberPlanLog => ({
+  id: r.id, gymId: r.gym_id, planId: r.plan_id, memberId: r.member_id, logDate: r.log_date,
+});
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ---------------------------------------------------------------------------------------------
@@ -229,7 +250,8 @@ function emptyDb(): Db {
     gyms: [], users: [], trainers: [], members: [], plans: [], subscriptions: [], payments: [],
     attendance: [], equipment: [], ratings: [], changeRequests: [], salaryPayments: [],
     bodyMetrics: [], notifications: [], churnAlerts: [], attendanceAudits: [],
-    attendanceRequests: [], trainerAttendance: [], idCounters: {},
+    attendanceRequests: [], trainerAttendance: [], announcements: [], memberPlans: [], memberPlanLogs: [],
+    idCounters: {},
   };
 }
 
@@ -282,6 +304,7 @@ async function doRefresh(): Promise<Db> {
   const [
     gyms, users, trainers, members, plans, subs, payments, attendance, equipment, ratings,
     changeRequests, salary, metrics, notifications, audits, attRequests, trainerAtt,
+    announcements, memberPlans, planLogs,
   ] = await Promise.all([
     fetchAll("gym", "gym_id"), fetchAll("app_user", "user_id"), fetchAll("trainer", "user_id"),
     fetchAll("member", "user_id"), fetchAll("plan", "plan_id"), fetchAll("subscription", "sub_id"),
@@ -291,6 +314,9 @@ async function doRefresh(): Promise<Db> {
     fetchAll("body_metric", "id"), fetchAll("notification", "id"),
     fetchAll("attendance_audit", "id"), fetchAll("attendance_request", "request_id"),
     fetchAll("trainer_attendance", "id").catch(() => []),
+    fetchAll("announcement", "id").catch(() => []),
+    fetchAll("member_plan", "id").catch(() => []),
+    fetchAll("member_plan_log", "id").catch(() => []),
   ]);
 
   const next = emptyDb();
@@ -311,6 +337,9 @@ async function doRefresh(): Promise<Db> {
   next.attendanceAudits = audits.map(mapAudit);
   next.attendanceRequests = attRequests.map(mapAttRequest);
   next.trainerAttendance = trainerAtt.map(mapTrainerAttendance);
+  next.announcements = announcements.map(mapAnnouncement);
+  next.memberPlans = memberPlans.map(mapMemberPlan);
+  next.memberPlanLogs = planLogs.map(mapPlanLog);
   updateSubscriptionStatuses(next);
   if (session.role !== "member") recomputeChurnAlertsInto(next, session.gymId);
   cache = next;
@@ -673,6 +702,138 @@ export async function renewSubscription(
   await supabase.from("notification").insert({
     gym_id: gymId, user_id: memberId, type: "renewal", message: `Your subscription was renewed until ${endDate}.`,
   });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reward points, online payment, announcements, diet and workout plans
+// ---------------------------------------------------------------------------------------------
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export async function getPoints(memberId: string): Promise<PointsInfo> {
+  const { data, error } = await supabase.rpc("member_points", { p_member: memberId });
+  check(error);
+  const r = (data ?? {}) as any;
+  return {
+    visits: r.visits ?? 0, earned: r.earned ?? 0, redeemed: r.redeemed ?? 0, balance: r.balance ?? 0,
+    pointValue: Number(r.point_value ?? 0.5), maxDiscountPct: r.max_discount_pct ?? 30,
+    pointsPerVisit: r.points_per_visit ?? 10, streakBonus: r.streak_bonus ?? 50,
+  };
+}
+
+export async function quoteRenewal(memberId: string, planId: string, usePoints: boolean): Promise<RenewalQuote> {
+  const { data, error } = await supabase.rpc("quote_renewal", { p_member: memberId, p_plan: planId, p_use_points: usePoints });
+  check(error);
+  const r = data as any;
+  return { price: Number(r.price), discount: Number(r.discount), pointsUsed: r.points_used, payable: Number(r.payable), balance: r.balance };
+}
+
+// Owner renews for a member, spending the member's points when asked.
+export async function ownerRenewWithPoints(memberId: string, planId: string, usePoints: boolean, mode: Payment["mode"]): Promise<void> {
+  const { error } = await supabase.rpc("owner_renew", { p_member: memberId, p_plan: planId, p_use_points: usePoints, p_mode: mode });
+  check(error);
+}
+
+interface RazorpayOrder { orderId: string; amount: number; currency: string; keyId: string; payable: number }
+
+function loadRazorpay(): Promise<void> {
+  if ((window as any).Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Could not load the payment window. Check your internet."));
+    document.body.appendChild(s);
+  });
+}
+
+// Opens Razorpay, then renews the plan once the payment is confirmed on the server.
+export async function payOnline(
+  session: Session, planId: string, usePoints: boolean,
+): Promise<{ paid: boolean; endDate?: string }> {
+  const { ok, data } = await invokeFn<RazorpayOrder>("razorpay-order", { planId, usePoints });
+  if (!ok || !data.orderId) throw new Error(data.error ?? "The payment could not be started.");
+  await loadRazorpay();
+  return new Promise((resolve, reject) => {
+    const rz = new (window as any).Razorpay({
+      key: data.keyId, amount: data.amount, currency: data.currency, order_id: data.orderId,
+      name: "Opsyl Fit", description: "Membership renewal", prefill: { name: session.name },
+      theme: { color: "#0057ff" },
+      handler: async (resp: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+        const verified = await invokeFn<{ endDate?: string }>("razorpay-verify", {
+          orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, signature: resp.razorpay_signature,
+        });
+        if (!verified.ok) reject(new Error(verified.data.error ?? "We could not confirm the payment."));
+        else resolve({ paid: true, endDate: verified.data.endDate });
+      },
+      modal: { ondismiss: () => resolve({ paid: false }) },
+    });
+    rz.on("payment.failed", () => reject(new Error("The payment failed. Please try again.")));
+    rz.open();
+  });
+}
+
+export async function sendAnnouncement(title: string, message: string, audience: "all" | "members" | "trainers"): Promise<number> {
+  const { data, error } = await supabase.rpc("send_announcement", { p_title: title, p_message: message, p_audience: audience });
+  check(error);
+  return Number(data ?? 0);
+}
+
+export async function addMemberPlan(
+  session: Session, input: { memberId: string; kind: "diet" | "workout"; title: string; content: string },
+): Promise<void> {
+  const { error } = await supabase.from("member_plan").insert({
+    gym_id: session.gymId, member_id: input.memberId, created_by: session.userId,
+    kind: input.kind, title: input.title.trim(), content: input.content.trim(),
+  });
+  check(error);
+}
+
+export async function deleteMemberPlan(planId: string): Promise<void> {
+  const { error } = await supabase.from("member_plan").delete().eq("id", planId);
+  check(error);
+}
+
+// Ticks or unticks a plan for a day (the member's own "done" mark).
+export async function setPlanDone(session: Session, planId: string, date: string, done: boolean): Promise<void> {
+  if (done) {
+    const { error } = await supabase.from("member_plan_log").upsert(
+      { gym_id: session.gymId, plan_id: planId, member_id: session.userId, log_date: date },
+      { onConflict: "plan_id,log_date" },
+    );
+    check(error);
+  } else {
+    const { error } = await supabase.from("member_plan_log").delete().eq("plan_id", planId).eq("log_date", date);
+    check(error);
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+// Streak and badges come straight from the attendance rows the member can already see.
+export interface StreakInfo { current: number; longest: number; badges: { id: string; label: string; earned: boolean; hint: string }[] }
+
+export function computeStreak(db: Db, memberId: string): StreakInfo {
+  const days = Array.from(new Set(db.attendance.filter((a) => a.memberId === memberId && a.checkIn).map((a) => a.attendanceDate))).sort();
+  const set = new Set(days);
+  let longest = 0, run = 0, prev = "";
+  for (const d of days) {
+    run = prev && addDays(prev, 1) === d ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    prev = d;
+  }
+  // The streak is still alive if the member came today or yesterday.
+  const today = todayStr();
+  let cursor = set.has(today) ? today : set.has(addDays(today, -1)) ? addDays(today, -1) : "";
+  let current = 0;
+  while (cursor && set.has(cursor)) { current++; cursor = addDays(cursor, -1); }
+  const total = days.length;
+  const badges = [
+    { id: "first", label: "First Step", earned: total >= 1, hint: "Attend your first day" },
+    { id: "streak7", label: "7-Day Streak", earned: longest >= 7, hint: "Come 7 days in a row" },
+    { id: "streak30", label: "30-Day Streak", earned: longest >= 30, hint: "Come 30 days in a row" },
+    { id: "visits25", label: "25 Visits", earned: total >= 25, hint: "Attend 25 days" },
+    { id: "visits100", label: "Century Club", earned: total >= 100, hint: "Attend 100 days" },
+  ];
+  return { current, longest, badges };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1149,6 +1310,10 @@ export async function updateGymSettings(gymId: string, patch: Partial<Gym>): Pro
   if (patch.radiusM !== undefined) update.radius_m = patch.radiusM;
   if (patch.closingTime !== undefined) update.closing_time = patch.closingTime;
   if (patch.requireCheckoutApproval !== undefined) update.require_checkout_approval = patch.requireCheckoutApproval;
+  if (patch.pointsPerVisit !== undefined) update.points_per_visit = patch.pointsPerVisit;
+  if (patch.pointValue !== undefined) update.point_value = patch.pointValue;
+  if (patch.streakBonus !== undefined) update.streak_bonus = patch.streakBonus;
+  if (patch.maxDiscountPct !== undefined) update.max_discount_pct = patch.maxDiscountPct;
   if (!Object.keys(update).length) return;
   const { error } = await supabase.from("gym").update(update).eq("gym_id", gymId);
   check(error);

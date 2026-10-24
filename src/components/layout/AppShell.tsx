@@ -5,6 +5,7 @@ import { TabBar } from "./TabBar";
 import { NavDrawer } from "./NavDrawer";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { GymSwitcher } from "./GymSwitcher";
+import { NotificationPrompt } from "./NotificationPrompt";
 import { useAuth } from "../../auth/AuthContext";
 import { useDb } from "../../api/db";
 
@@ -40,6 +41,7 @@ export function AppShell({ items, raisedTo, greeting }: { items: NavItem[]; rais
         </main>
       </div>
       <TabBar items={items} raisedTo={raisedTo} />
+      <NotificationPrompt />
     </div>
   );
 }

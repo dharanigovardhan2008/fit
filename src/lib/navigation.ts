@@ -1,6 +1,7 @@
 import {
   LayoutGrid, Users, QrCode, BarChart3, MoreHorizontal, Wallet, Star, GitPullRequestArrow,
   Bell, Settings, UserCircle, Dumbbell, LineChart, ScanLine, ClipboardList, ClipboardCheck, UserCheck,
+  Megaphone, Salad, Gift,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -23,6 +24,8 @@ export const ownerNav: NavItem[] = [
   { to: "/owner/trainer-attendance", label: "Trainer Attendance", icon: ClipboardCheck },
   { to: "/owner/trainers", label: "Trainers", icon: Dumbbell },
   { to: "/owner/subscriptions", label: "Subscriptions", icon: Wallet },
+  { to: "/owner/announcements", label: "Announcements", icon: Megaphone },
+  { to: "/owner/plans", label: "Diet & Workouts", icon: Salad },
   { to: "/owner/ratings", label: "Ratings", icon: Star },
   { to: "/owner/requests", label: "Requests", icon: GitPullRequestArrow },
   { to: "/owner/pending-attendance", label: "Pending Attendance", icon: ClipboardCheck, badge: "attendance_requests" },
@@ -37,6 +40,7 @@ export const trainerNav: NavItem[] = [
   { to: "/trainer/pending-attendance", label: "Pending", icon: ClipboardCheck, tab: true, badge: "attendance_requests" },
   { to: "/trainer/my-attendance", label: "My Attendance", icon: ClipboardCheck },
   { to: "/trainer/manual-attendance", label: "Mark Members", icon: UserCheck },
+  { to: "/trainer/plans", label: "Diet & Workouts", icon: Salad },
   { to: "/trainer/salary", label: "Salary", icon: Wallet },
   { to: "/trainer/rating", label: "My Rating", icon: Star },
   { to: "/trainer/alerts", label: "Alerts", icon: Bell },
@@ -49,6 +53,8 @@ export const memberNav: NavItem[] = [
   { to: "/member/subscription", label: "Plan", icon: ClipboardList, tab: true },
   { to: "/member/checkin", label: "Check-in", icon: ScanLine, tab: true },
   { to: "/member/profile", label: "Profile", icon: UserCircle, tab: true },
+  { to: "/member/rewards", label: "Rewards", icon: Gift },
+  { to: "/member/plans", label: "My Plans", icon: Salad },
   { to: "/member/trainer", label: "My Trainer", icon: Dumbbell },
   { to: "/member/progress", label: "Progress", icon: LineChart },
   { to: "/member/rate", label: "Rate", icon: Star },

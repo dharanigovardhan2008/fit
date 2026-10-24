@@ -16,6 +16,10 @@ export interface Gym {
   radiusM: number;
   closingTime: string;
   requireCheckoutApproval: boolean;
+  pointsPerVisit: number;
+  pointValue: number;
+  streakBonus: number;
+  maxDiscountPct: number;
   createdAt: string;
 }
 
@@ -227,4 +231,52 @@ export interface TrainerAttendance {
 export interface GymOption {
   gymId: string;
   name: string;
+}
+
+export interface Announcement {
+  id: string;
+  gymId: string;
+  title: string;
+  message: string;
+  audience: "all" | "members" | "trainers";
+  sentTo: number;
+  createdAt: string;
+}
+
+export interface MemberPlan {
+  id: string;
+  gymId: string;
+  memberId: string;
+  createdBy: string | null;
+  kind: "diet" | "workout";
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface MemberPlanLog {
+  id: string;
+  gymId: string;
+  planId: string;
+  memberId: string;
+  logDate: string;
+}
+
+export interface PointsInfo {
+  visits: number;
+  earned: number;
+  redeemed: number;
+  balance: number;
+  pointValue: number;
+  maxDiscountPct: number;
+  pointsPerVisit: number;
+  streakBonus: number;
+}
+
+export interface RenewalQuote {
+  price: number;
+  discount: number;
+  pointsUsed: number;
+  payable: number;
+  balance: number;
 }

@@ -37,6 +37,16 @@ export default function OwnerSettings() {
     setLoadedGymId(gym.gymId);
   }
 
+  const [rewards, setRewards] = useState({ pointsPerVisit: "10", streakBonus: "50", pointValue: "0.5", maxDiscountPct: "30" });
+  const [rewardsGymId, setRewardsGymId] = useState<string | null>(null);
+  if (gym && rewardsGymId !== gym.gymId) {
+    setRewards({
+      pointsPerVisit: String(gym.pointsPerVisit), streakBonus: String(gym.streakBonus),
+      pointValue: String(gym.pointValue), maxDiscountPct: String(gym.maxDiscountPct),
+    });
+    setRewardsGymId(gym.gymId);
+  }
+
   const [newPlan, setNewPlan] = useState({ name: "", durationDays: "", price: "" });
   const [newEquipment, setNewEquipment] = useState("");
   const [passwords, setPasswords] = useState({ current: "", next: "" });
@@ -180,6 +190,42 @@ export default function OwnerSettings() {
           }}
         >
           Update password
+        </Button>
+      </Card>
+
+      <Card className="flex flex-col gap-4">
+        <CardTitle>Reward points</CardTitle>
+        <p className="text-[13px] leading-5 text-text-secondary">
+          Members earn points for every day they check in and can spend them to reduce the price of a renewal.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input id="rw-visit" label="Points per visit" type="number" min={0} value={rewards.pointsPerVisit}
+            onChange={(e) => setRewards({ ...rewards, pointsPerVisit: e.target.value })} />
+          <Input id="rw-bonus" label="Bonus for 7 days in a row" type="number" min={0} value={rewards.streakBonus}
+            onChange={(e) => setRewards({ ...rewards, streakBonus: e.target.value })} />
+          <Input id="rw-value" label="Rupees per point" type="number" min={0} step="0.1" value={rewards.pointValue}
+            onChange={(e) => setRewards({ ...rewards, pointValue: e.target.value })} />
+          <Input id="rw-max" label="Most of a plan points can pay (%)" type="number" min={0} max={100} value={rewards.maxDiscountPct}
+            onChange={(e) => setRewards({ ...rewards, maxDiscountPct: e.target.value })} />
+        </div>
+        <Button
+          onClick={async () => {
+            if (!gym) return;
+            try {
+              await updateGymSettings(gym.gymId, {
+                pointsPerVisit: Math.max(0, Math.round(Number(rewards.pointsPerVisit))),
+                streakBonus: Math.max(0, Math.round(Number(rewards.streakBonus))),
+                pointValue: Math.max(0, Number(rewards.pointValue)),
+                maxDiscountPct: Math.min(100, Math.max(0, Math.round(Number(rewards.maxDiscountPct)))),
+              });
+              invalidate();
+              notify("Reward settings saved");
+            } catch (err) {
+              notify(err instanceof Error ? err.message : "Could not save.", "error");
+            }
+          }}
+        >
+          Save rewards
         </Button>
       </Card>
 

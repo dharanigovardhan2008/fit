@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
-import { ScanLine, Dumbbell, LineChart as LineChartIcon } from "lucide-react";
+import { ScanLine, Dumbbell, Flame, Gift, LineChart as LineChartIcon } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { useDb } from "../../api/db";
 import { ProgressBar } from "../../components/ui/ProgressBar";
 import { Card, CardTitle } from "../../components/ui/Card";
-import { daysBetween, todayStr } from "../../lib/backend";
+import { computeStreak, daysBetween, todayStr } from "../../lib/backend";
+import { useMyPoints } from "./MemberRewards";
 import { formatDate } from "../../lib/format";
 
 export default function MemberHome() {
   const { session } = useAuth();
   const { data: db } = useDb();
+  const { data: points } = useMyPoints();
+  const streak = db && session ? computeStreak(db, session.userId) : null;
 
   const sub = db?.subscriptions
     .filter((s) => s.memberId === session?.userId)
@@ -61,6 +64,21 @@ export default function MemberHome() {
           <span className="text-[11px] font-medium">Progress</span>
         </Link>
       </div>
+
+      <Link to="/member/rewards" className="flex items-center justify-between gap-3 rounded-[22px] bg-white p-4 shadow-card">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+            <Flame size={22} />
+          </span>
+          <div>
+            <p className="text-[14px] font-semibold">{streak?.current ?? 0} day streak</p>
+            <p className="text-[12px] text-text-secondary">Keep coming to earn more points</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[12px] font-semibold text-on-ink">
+          <Gift size={14} /> {points?.balance ?? 0} pts
+        </div>
+      </Link>
 
       <Card>
         <CardTitle>Your trainer</CardTitle>
